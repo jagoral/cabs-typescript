@@ -13,6 +13,7 @@ import { DriverAttributeRepository } from '../repository/driver-attribute.reposi
 import { TransitRepository } from '../repository/transit.repository';
 import { DriverFeeService } from './driver-fee.service';
 import dayjs from 'dayjs';
+import { DriverLicense } from 'src/entity/driver-license';
 
 @Injectable()
 export class DriverService {
@@ -34,16 +35,10 @@ export class DriverService {
   ): Promise<Driver> {
     const driver = new Driver();
     if (status === DriverStatus.ACTIVE) {
-      if (
-        !driverLicense ||
-        !driverLicense.match(DriverService.DRIVER_LICENSE_REGEX)
-      ) {
-        throw new NotAcceptableException(
-          'Illegal license no = ' + driverLicense,
-        );
-      }
+      driver.setDriverLicense(DriverLicense.withLicense(driverLicense));
+    } else {
+      driver.setDriverLicense(DriverLicense.withoutValidation(driverLicense));
     }
-    driver.setDriverLicense(driverLicense);
     driver.setLastName(lastName);
     driver.setFirstName(firstName);
     driver.setStatus(status);
@@ -81,11 +76,13 @@ export class DriverService {
     }
     if (status === DriverStatus.ACTIVE) {
       const license = driver.getDriverLicense();
-
-      if (!license || !license.match(DriverService.DRIVER_LICENSE_REGEX)) {
-        throw new ForbiddenException(
-          `Status cannot be ACTIVE. Illegal license no ${license}`,
-        );
+      try {
+        driver.setDriverLicense(DriverLicense.withLicense(license.asString()));
+      } catch (error: unknown) {
+        if (error instanceof NotAcceptableException) {
+          throw new ForbiddenException(error.message);
+        }
+        throw error;
       }
     }
 
@@ -101,11 +98,8 @@ export class DriverService {
         `Driver with id ${driverId} does not exists.`,
       );
     }
-    if (!newLicense || !newLicense.match(DriverService.DRIVER_LICENSE_REGEX)) {
-      throw new NotAcceptableException(
-        'Illegal new license no = ' + newLicense,
-      );
-    }
+
+    driver.setDriverLicense(DriverLicense.withLicense(newLicense));
 
     if (!(driver.getStatus() === DriverStatus.ACTIVE)) {
       throw new NotAcceptableException(
@@ -113,7 +107,6 @@ export class DriverService {
       );
     }
 
-    driver.setDriverLicense(newLicense);
     await this.driverRepository.save(driver);
   }
 
