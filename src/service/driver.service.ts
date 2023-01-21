@@ -28,14 +28,12 @@ export class DriverService {
     private driverFeeService: DriverFeeService,
   ) {}
 
-  public async createDriver({
-    photo,
-    driverLicense,
-    lastName,
-    firstName,
-  }: CreateDriverDto): Promise<Driver> {
+  public async createDriver(
+    { photo, driverLicense, lastName, firstName }: CreateDriverDto,
+    status: DriverStatus = DriverStatus.INACTIVE,
+  ): Promise<Driver> {
     const driver = new Driver();
-    if (driver.getStatus() === DriverStatus.ACTIVE) {
+    if (status === DriverStatus.ACTIVE) {
       if (
         !driverLicense ||
         !driverLicense.match(DriverService.DRIVER_LICENSE_REGEX)
@@ -48,7 +46,7 @@ export class DriverService {
     driver.setDriverLicense(driverLicense);
     driver.setLastName(lastName);
     driver.setFirstName(firstName);
-    driver.setStatus(DriverStatus.INACTIVE);
+    driver.setStatus(status);
     driver.setType(DriverType.CANDIDATE);
     if (photo !== null) {
       if (Buffer.from(photo, 'base64').toString('base64') === photo) {
@@ -84,7 +82,7 @@ export class DriverService {
     if (status === DriverStatus.ACTIVE) {
       const license = driver.getDriverLicense();
 
-      if (!license) {
+      if (!license || !license.match(DriverService.DRIVER_LICENSE_REGEX)) {
         throw new ForbiddenException(
           `Status cannot be ACTIVE. Illegal license no ${license}`,
         );

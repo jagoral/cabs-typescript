@@ -61,6 +61,7 @@ import { DriverReportController } from './controllers/driver-report.controller';
       database: process.env.DATABASE_NAME,
       autoLoadEntities: true,
       synchronize: true,
+      keepConnectionAlive: true,
     }),
     TypeOrmModule.forFeature([
       DriverRepository,
