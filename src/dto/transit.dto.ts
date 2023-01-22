@@ -1,12 +1,12 @@
-import { DayOfWeek, Status, Transit } from '../entity/transit.entity';
-import { DriverDto } from './driver.dto';
-import { ClaimDto } from './claim.dto';
-import { AddressDto } from './address.dto';
-import { CarClass } from '../entity/car-type.entity';
-import { ClientDto } from './client.dto';
 import * as dayjs from 'dayjs';
 import * as dayOfYear from 'dayjs/plugin/dayOfYear';
-import { NotAcceptableException } from '@nestjs/common';
+import { CarClass } from '../entity/car-type.entity';
+import { DayOfWeek, Status, Transit } from '../entity/transit.entity';
+import { Distance } from './../distance/distance';
+import { AddressDto } from './address.dto';
+import { ClaimDto } from './claim.dto';
+import { ClientDto } from './client.dto';
+import { DriverDto } from './driver.dto';
 
 dayjs.extend(dayOfYear);
 
@@ -21,7 +21,7 @@ export class TransitDto {
 
   public factor: number | null;
 
-  public distance: number;
+  public distance: Distance;
 
   public distanceUnit: string;
 
@@ -161,38 +161,7 @@ export class TransitDto {
 
   public getDistance(unit: string) {
     this.distanceUnit = unit;
-    if (unit === 'km') {
-      if (this.distance == Math.ceil(this.distance)) {
-        return new Intl.NumberFormat('en-US', {
-          style: 'unit',
-          unit: 'kilometer',
-        }).format(Math.round(this.distance));
-      }
-      return new Intl.NumberFormat('en-US', {
-        style: 'unit',
-        unit: 'kilometer',
-      }).format(this.distance);
-    }
-    if (unit === 'miles') {
-      const distance = this.distance / 1.609344;
-      if (distance == Math.ceil(distance)) {
-        return new Intl.NumberFormat('en-US', {
-          style: 'unit',
-          unit: 'mile',
-        }).format(Math.round(distance));
-      }
-      return new Intl.NumberFormat('en-US', {
-        style: 'unit',
-        unit: 'mile',
-      }).format(distance);
-    }
-    if (unit === 'm') {
-      return new Intl.NumberFormat('en-US', {
-        style: 'unit',
-        unit: 'meter',
-      }).format(Math.round(this.distance * 1000));
-    }
-    throw new NotAcceptableException('Invalid unit ' + unit);
+    return this.distance.printIn(unit);
   }
 
   public getProposedDrivers() {

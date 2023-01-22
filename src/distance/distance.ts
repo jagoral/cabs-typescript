@@ -3,6 +3,8 @@ import { NotAcceptableException } from '@nestjs/common';
 const MILES_TO_KILOMETERS_RATIO = 1.609344;
 
 export class Distance {
+  public static readonly ZERO = new Distance(0);
+
   private constructor(private readonly km: number) {}
 
   public static ofKm(km: number): Distance {

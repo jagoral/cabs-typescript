@@ -1,4 +1,5 @@
 import { NotAcceptableException } from '@nestjs/common';
+import { Distance } from 'src/distance/distance';
 import { Address } from 'src/entity/address.entity';
 import { Client } from 'src/entity/client.entity';
 import { Status, Transit } from 'src/entity/transit.entity';
@@ -41,7 +42,7 @@ describe('Calculate Transit Distance', () => {
     transit.setTo(new Address('PL', 'Warszawa', 'ul. Testowa 1', 1));
     transit.setFrom(new Address('PL', 'Warszawa', 'ul. Testowa 1', 1));
     transit.setStatus(Status.DRAFT);
-    transit.setKm(km);
+    transit.setKm(Distance.ofKm(km));
     transit.setClient(new Client());
     return new TransitDto(transit);
   }

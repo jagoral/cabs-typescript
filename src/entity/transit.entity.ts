@@ -1,3 +1,4 @@
+import { Distance } from './../distance/distance';
 import { ForbiddenException } from '@nestjs/common';
 import { BaseEntity } from '../common/base.entity';
 import { Column, Entity, JoinColumn, ManyToMany, ManyToOne } from 'typeorm';
@@ -209,11 +210,11 @@ export class Transit extends BaseEntity {
   }
 
   public getKm() {
-    return this.km;
+    return Distance.ofKm(this.km);
   }
 
-  public setKm(km: number) {
-    this.km = km;
+  public setKm(km: Distance) {
+    this.km = km.toKmInNumber();
     this.estimateCost();
   }
 

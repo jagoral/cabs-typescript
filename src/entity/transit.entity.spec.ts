@@ -1,4 +1,5 @@
 import { ForbiddenException } from '@nestjs/common';
+import { Distance } from 'src/distance/distance';
 import { Status, Transit } from './transit.entity';
 
 describe('Calculate Transit Price', () => {
@@ -47,7 +48,7 @@ describe('Calculate Transit Price', () => {
     transit.setDateTime(new Date().getMilliseconds());
     // setKm has a side effect, so to avoid an error, status is set to DRAFT
     transit.setStatus(Status.DRAFT);
-    transit.setKm(km);
+    transit.setKm(Distance.ofKm(km));
     transit.setStatus(status);
     return transit;
   }
