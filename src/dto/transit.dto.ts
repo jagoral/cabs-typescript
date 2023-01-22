@@ -165,12 +165,12 @@ export class TransitDto {
       if (this.distance == Math.ceil(this.distance)) {
         return new Intl.NumberFormat('en-US', {
           style: 'unit',
-          unit: 'length-kilometer',
+          unit: 'kilometer',
         }).format(Math.round(this.distance));
       }
       return new Intl.NumberFormat('en-US', {
         style: 'unit',
-        unit: 'length-kilometer',
+        unit: 'kilometer',
       }).format(this.distance);
     }
     if (unit === 'miles') {
@@ -178,18 +178,18 @@ export class TransitDto {
       if (distance == Math.ceil(distance)) {
         return new Intl.NumberFormat('en-US', {
           style: 'unit',
-          unit: 'length-mile',
-        }).format(Math.round(this.distance));
+          unit: 'mile',
+        }).format(Math.round(distance));
       }
       return new Intl.NumberFormat('en-US', {
         style: 'unit',
-        unit: 'length-mile',
-      }).format(this.distance);
+        unit: 'mile',
+      }).format(distance);
     }
     if (unit === 'm') {
       return new Intl.NumberFormat('en-US', {
         style: 'unit',
-        unit: 'length-meter',
+        unit: 'meter',
       }).format(Math.round(this.distance * 1000));
     }
     throw new NotAcceptableException('Invalid unit ' + unit);
