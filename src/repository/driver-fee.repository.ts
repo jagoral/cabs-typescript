@@ -5,6 +5,6 @@ import { Driver } from '../entity/driver.entity';
 @EntityRepository(DriverFee)
 export class DriverFeeRepository extends Repository<DriverFee> {
   public async findByDriver(driver: Driver) {
-    return this.findOne({ driver });
+    return this.findOne({ relations: ['driver'], where: { driver } });
   }
 }

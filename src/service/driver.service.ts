@@ -12,7 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DriverAttributeRepository } from '../repository/driver-attribute.repository';
 import { TransitRepository } from '../repository/transit.repository';
 import { DriverFeeService } from './driver-fee.service';
-import dayjs from 'dayjs';
+import * as dayjs from 'dayjs';
 import { DriverLicense } from 'src/entity/driver-license';
 
 @Injectable()
@@ -24,7 +24,7 @@ export class DriverService {
     private driverRepository: DriverRepository,
     @InjectRepository(DriverAttributeRepository)
     private driverAttributeRepository: DriverAttributeRepository,
-    @InjectRepository(DriverRepository)
+    @InjectRepository(TransitRepository)
     private transitRepository: TransitRepository,
     private driverFeeService: DriverFeeService,
   ) {}
@@ -129,7 +129,7 @@ export class DriverService {
   public async calculateDriverMonthlyPayment(
     driverId: string,
     year: number,
-    month: number,
+    monthIndex: number,
   ) {
     const driver = await this.driverRepository.findOne(driverId);
 
@@ -139,7 +139,7 @@ export class DriverService {
       );
     }
 
-    const yearMonth = dayjs(`${year}-${month}`, 'YYYY-M');
+    const yearMonth = dayjs(`${year}-${monthIndex + 1}`, 'YYYY-M');
     const from = yearMonth.startOf('month');
     const to = yearMonth.endOf('month');
 
@@ -166,9 +166,12 @@ export class DriverService {
     year: number,
   ): Promise<Map<number, number>> {
     const payments = new Map();
-    const months = Array.from({ length: 5 }).map((_, i) => i);
+    const months = Array.from({ length: 12 }).map((_, i) => i);
     for (const m of months) {
-      payments.set(m, this.calculateDriverMonthlyPayment(driverId, year, m));
+      payments.set(
+        m,
+        await this.calculateDriverMonthlyPayment(driverId, year, m),
+      );
     }
     return payments;
   }
