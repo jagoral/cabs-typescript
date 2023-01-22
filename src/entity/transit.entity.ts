@@ -320,7 +320,7 @@ export class Transit extends BaseEntity {
       factorToCalculate = 1;
     }
     let kmRate: number;
-    const day = new Date();
+    const day = new Date(this.dateTime);
     // wprowadzenie nowych cennikow od 1.01.2019
     if (day.getFullYear() <= 2018) {
       kmRate = 1.0;
