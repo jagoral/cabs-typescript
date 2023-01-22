@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DriverFeeRepository } from '../repository/driver-fee.repository';
 import { TransitRepository } from '../repository/transit.repository';
 import { FeeType } from '../entity/driver-fee.entity';
+import { Money } from 'src/money/money';
 
 @Injectable()
 export class DriverFeeService {
@@ -21,7 +22,7 @@ export class DriverFeeService {
     if (transit.getDriversFee() != null) {
       return transit.getDriversFee();
     }
-    const transitPrice = transit.getPrice() ?? 0;
+    const transitPrice = transit.getPrice() ?? Money.ZERO;
 
     const driver = transit.getDriver();
 
@@ -38,14 +39,16 @@ export class DriverFeeService {
     }
     let finalFee;
     if (driverFee.getFeeType() === FeeType.FLAT) {
-      finalFee = transitPrice - driverFee.getAmount();
+      finalFee = transitPrice.subtract(new Money(driverFee.getAmount()));
     } else {
-      finalFee = (transitPrice * driverFee.getAmount()) / 100;
+      finalFee = transitPrice.percentage(driverFee.getAmount());
     }
 
-    return Math.max(
-      finalFee,
-      driverFee.getMin() == null ? 0 : driverFee.getMin(),
+    return new Money(
+      Math.max(
+        finalFee.toInt(),
+        driverFee.getMin() == null ? 0 : driverFee.getMin().toInt(),
+      ),
     );
   }
 }

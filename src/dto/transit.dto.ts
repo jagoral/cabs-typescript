@@ -65,7 +65,7 @@ export class TransitDto {
     this.factor = transit.factor;
     const price = transit.getPrice();
     if (price) {
-      this.price = price;
+      this.price = price.toInt();
     }
     this.date = transit.getDateTime();
     this.status = transit.getStatus();
@@ -78,11 +78,11 @@ export class TransitDto {
     this.carClass = transit.getCarType();
     this.clientDto = new ClientDto(transit.getClient());
     if (transit.getDriversFee() != null) {
-      this.driverFee = transit.getDriversFee();
+      this.driverFee = transit.getDriversFee().toInt();
     }
     const estimatedPrice = transit.getEstimatedPrice();
     if (estimatedPrice) {
-      this.estimatedPrice = estimatedPrice;
+      this.estimatedPrice = estimatedPrice.toInt();
     }
     this.dateTime = transit.getDateTime();
     this.published = transit.getPublished();

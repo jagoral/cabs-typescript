@@ -106,7 +106,7 @@ export class ClaimService {
     }
     if (claim.getOwner().getType() === Type.VIP) {
       if (
-        (claim.getTransit().getPrice() ?? 0) <
+        (claim.getTransit().getPrice()?.toInt() ?? 0) <
         this.appProperties.getAutomaticRefundForVipThreshold()
       ) {
         claim.setStatus(ClaimStatus.REFUNDED);
@@ -140,7 +140,7 @@ export class ClaimService {
         this.appProperties.getNoOfTransitsForClaimAutomaticRefund()
       ) {
         if (
-          (claim.getTransit().getPrice() ?? 0) <
+          (claim.getTransit().getPrice()?.toInt() ?? 0) <
           this.appProperties.getAutomaticRefundForVipThreshold()
         ) {
           claim.setStatus(ClaimStatus.REFUNDED);

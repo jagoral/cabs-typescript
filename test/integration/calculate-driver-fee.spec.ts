@@ -2,6 +2,7 @@ import { CarClass } from 'src/entity/car-type.entity';
 import { DriverFee, FeeType } from 'src/entity/driver-fee.entity';
 import { Driver, DriverStatus } from 'src/entity/driver.entity';
 import { Status, Transit } from 'src/entity/transit.entity';
+import { Money } from 'src/money/money';
 import { DriverFeeRepository } from 'src/repository/driver-fee.repository';
 import { TransitRepository } from 'src/repository/transit.repository';
 import { DriverFeeService } from 'src/service/driver-fee.service';
@@ -34,7 +35,7 @@ describe('Calculate Driver Fee', () => {
     const fee = await driverFeeService.calculateDriverFee(transit.getId());
 
     //then
-    expect(fee).toEqual(50);
+    expect(fee.toInt()).toEqual(50);
   });
 
   it('should calculate drivers percentage fee', async () => {
@@ -49,7 +50,7 @@ describe('Calculate Driver Fee', () => {
     const fee = await driverFeeService.calculateDriverFee(transit.getId());
 
     //then
-    expect(fee).toEqual(40);
+    expect(fee.toInt()).toEqual(40);
   });
 
   it('should use minimum fee', async () => {
@@ -68,7 +69,7 @@ describe('Calculate Driver Fee', () => {
     const fee = await driverFeeService.calculateDriverFee(transit.getId());
 
     //then
-    expect(fee).toEqual(5);
+    expect(fee.toInt()).toEqual(5);
   });
 
   function driverHasFee(
@@ -98,7 +99,7 @@ describe('Calculate Driver Fee', () => {
 
   function aTransit(driver: Driver, price: number): Promise<Transit> {
     const transit = new Transit();
-    transit.setPrice(price);
+    transit.setPrice(new Money(price));
     transit.setDriver(driver);
     transit.setDateTime(new Date(2020, 10, 20).getTime());
     transit.setStatus(Status.DRAFT);

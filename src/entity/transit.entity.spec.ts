@@ -27,7 +27,7 @@ describe('Calculate Transit Price', () => {
     const price = transit.calculateFinalCosts();
 
     //then
-    expect(price).toBe(29);
+    expect(price.toInt()).toBe(29);
   });
 
   it('should estimate price on regular day', () => {
@@ -39,7 +39,7 @@ describe('Calculate Transit Price', () => {
     const price = transit.estimateCost();
 
     //then
-    expect(price).toBe(29);
+    expect(price.toInt()).toBe(29);
   });
 
   function createTransit(status: Status, km: number): Transit {

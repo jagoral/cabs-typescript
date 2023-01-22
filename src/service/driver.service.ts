@@ -14,6 +14,7 @@ import { TransitRepository } from '../repository/transit.repository';
 import { DriverFeeService } from './driver-fee.service';
 import * as dayjs from 'dayjs';
 import { DriverLicense } from 'src/entity/driver-license';
+import { Money } from 'src/money/money';
 
 @Injectable()
 export class DriverService {
@@ -156,7 +157,7 @@ export class DriverService {
           this.driverFeeService.calculateDriverFee(t.getId()),
         ),
       )
-    ).reduce((prev, curr) => prev + curr, 0);
+    ).reduce((prev, curr) => prev.add(curr), Money.ZERO);
 
     return sum;
   }
@@ -164,7 +165,7 @@ export class DriverService {
   public async calculateDriverYearlyPayment(
     driverId: string,
     year: number,
-  ): Promise<Map<number, number>> {
+  ): Promise<Map<number, Money>> {
     const payments = new Map();
     const months = Array.from({ length: 12 }).map((_, i) => i);
     for (const m of months) {

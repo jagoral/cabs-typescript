@@ -1,3 +1,11 @@
+import { ValueTransformer } from 'typeorm';
+
+export const moneyColumnTransformer: ValueTransformer = {
+  from: (value: number | null) =>
+    typeof value === 'number' ? new Money(value) : value,
+  to: (value: Money | null) => (value instanceof Money ? value.toInt() : value),
+};
+
 export class Money {
   public static readonly ZERO = new Money(0);
 

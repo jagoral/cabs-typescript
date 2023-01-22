@@ -5,6 +5,7 @@ import { Driver } from './driver.entity';
 import { Client, PaymentType } from './client.entity';
 import { Address } from './address.entity';
 import { CarClass } from './car-type.entity';
+import { Money, moneyColumnTransformer } from 'src/money/money';
 
 export enum Status {
   DRAFT = 'draft',
@@ -109,14 +110,26 @@ export class Transit extends BaseEntity {
   private km: number;
 
   // https://stackoverflow.com/questions/37107123/sould-i-store-price-as-decimal-or-integer-in-mysql
-  @Column({ nullable: true, type: 'integer' })
-  private price: number | null;
+  @Column({
+    nullable: true,
+    type: 'integer',
+    transformer: moneyColumnTransformer,
+  })
+  private price: Money | null;
 
-  @Column({ nullable: true, type: 'integer' })
-  private estimatedPrice: number | null;
+  @Column({
+    nullable: true,
+    type: 'integer',
+    transformer: moneyColumnTransformer,
+  })
+  private estimatedPrice: Money | null;
 
-  @Column({ nullable: true })
-  private driversFee: number;
+  @Column({
+    nullable: true,
+    type: 'integer',
+    transformer: moneyColumnTransformer,
+  })
+  private driversFee: Money;
 
   @Column({ type: 'bigint', nullable: true })
   public dateTime: number;
@@ -151,7 +164,7 @@ export class Transit extends BaseEntity {
   }
 
   //just for testing
-  public setPrice(price: number) {
+  public setPrice(price: Money) {
     this.price = price;
   }
 
@@ -276,7 +289,7 @@ export class Transit extends BaseEntity {
     return this.driversFee;
   }
 
-  public setDriversFee(driversFee: number) {
+  public setDriversFee(driversFee: Money) {
     this.driversFee = driversFee;
   }
 
@@ -284,7 +297,7 @@ export class Transit extends BaseEntity {
     return this.estimatedPrice;
   }
 
-  public setEstimatedPrice(estimatedPrice: number) {
+  public setEstimatedPrice(estimatedPrice: Money) {
     this.estimatedPrice = estimatedPrice;
   }
 
@@ -303,7 +316,7 @@ export class Transit extends BaseEntity {
     return this.estimatedPrice;
   }
 
-  public calculateFinalCosts(): number {
+  public calculateFinalCosts(): Money {
     if (this.status === Status.COMPLETED) {
       return this.calculateCost();
     } else {
@@ -313,7 +326,7 @@ export class Transit extends BaseEntity {
     }
   }
 
-  private calculateCost(): number {
+  private calculateCost(): Money {
     let baseFee = Transit.BASE_FEE;
     let factorToCalculate = this.factor;
     if (factorToCalculate == null) {
@@ -364,7 +377,7 @@ export class Transit extends BaseEntity {
     const priceBigDecimal = Number(
       (this.km * kmRate * factorToCalculate + baseFee).toFixed(2),
     );
-    this.price = priceBigDecimal;
+    this.price = new Money(priceBigDecimal);
     return this.price;
   }
 }
