@@ -1,13 +1,28 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, Type } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from 'src/app.module';
 
+let app: INestApplication;
+
 export async function createTestApp(): Promise<INestApplication> {
+  if (app) {
+    return app;
+  }
+
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [AppModule],
   }).compile();
 
-  const app = moduleFixture.createNestApplication();
+  app = moduleFixture.createNestApplication();
 
   return app.init();
 }
+
+export async function getTestApp(): Promise<INestApplication> {
+  return createTestApp();
+}
+
+export const getTestService = async <T>(repository: Type<T>) => {
+  const app = await getTestApp();
+  return app.get<T>(repository);
+};
