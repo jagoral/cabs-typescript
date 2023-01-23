@@ -96,7 +96,7 @@ export class TransitDto {
   }
 
   public setTariff() {
-    const day = dayjs();
+    const day = dayjs(this.date);
 
     // wprowadzenie nowych cennikow od 1.01.2019
     if (day.get('year') <= 2018) {

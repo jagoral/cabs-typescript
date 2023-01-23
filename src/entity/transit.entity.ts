@@ -132,7 +132,7 @@ export class Transit extends BaseEntity {
   })
   private driversFee: Money;
 
-  @Column({ type: 'bigint', nullable: true })
+  @Column({ type: 'bigint' })
   public dateTime: number;
 
   @Column({ type: 'bigint', nullable: true })
@@ -194,7 +194,7 @@ export class Transit extends BaseEntity {
   }
 
   public getDateTime() {
-    return this.dateTime;
+    return +this.dateTime;
   }
 
   public getPublished() {
