@@ -1,14 +1,10 @@
-import * as dayjs from 'dayjs';
-import * as dayOfYear from 'dayjs/plugin/dayOfYear';
 import { CarClass } from '../entity/car-type.entity';
-import { DayOfWeek, Status, Transit } from '../entity/transit.entity';
+import { Status, Transit } from '../entity/transit.entity';
 import { Distance } from './../distance/distance';
 import { AddressDto } from './address.dto';
 import { ClaimDto } from './claim.dto';
 import { ClientDto } from './client.dto';
 import { DriverDto } from './driver.dto';
-
-dayjs.extend(dayOfYear);
 
 export class TransitDto {
   public id: string;
@@ -62,14 +58,16 @@ export class TransitDto {
   constructor(transit: Transit) {
     this.id = transit.getId();
     this.distance = transit.getKm();
-    this.factor = transit.factor;
+    this.factor = 1;
     const price = transit.getPrice();
     if (price) {
       this.price = price.toInt();
     }
     this.date = transit.getDateTime();
     this.status = transit.getStatus();
-    this.setTariff();
+    this.tariff = transit.getTariff().getName();
+    this.kmRate = transit.getTariff().getKmRate();
+    this.baseFee = transit.getTariff().getBaseFee();
     for (const d of transit.getProposedDrivers()) {
       this.proposedDrivers.push(new DriverDto(d));
     }
@@ -93,66 +91,6 @@ export class TransitDto {
 
   public getKmRate() {
     return this.kmRate;
-  }
-
-  public setTariff() {
-    const day = dayjs(this.date);
-
-    // wprowadzenie nowych cennikow od 1.01.2019
-    if (day.get('year') <= 2018) {
-      this.kmRate = 1.0;
-      this.tariff = 'Standard';
-      return;
-    }
-
-    const year = day.get('year');
-    const leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
-
-    if (
-      (leap && day.dayOfYear() == 366) ||
-      (!leap && day.dayOfYear() == 365) ||
-      (day.dayOfYear() == 1 && day.get('hour') <= 6)
-    ) {
-      this.tariff = 'Sylwester';
-      this.kmRate = 3.5;
-    } else {
-      switch (day.get('day')) {
-        case DayOfWeek.MONDAY:
-        case DayOfWeek.TUESDAY:
-        case DayOfWeek.WEDNESDAY:
-        case DayOfWeek.THURSDAY:
-          this.kmRate = 1.0;
-          this.tariff = 'Standard';
-          break;
-        case DayOfWeek.FRIDAY:
-          if (day.get('hour') < 17) {
-            this.tariff = 'Standard';
-            this.kmRate = 1.0;
-          } else {
-            this.tariff = 'Weekend+';
-            this.kmRate = 2.5;
-          }
-          break;
-        case DayOfWeek.SATURDAY:
-          if (day.get('hour') < 6 || day.get('hour') >= 17) {
-            this.kmRate = 2.5;
-            this.tariff = 'Weekend+';
-          } else if (day.get('hour') < 17) {
-            this.kmRate = 1.5;
-            this.tariff = 'Weekend';
-          }
-          break;
-        case DayOfWeek.SUNDAY:
-          if (day.get('hour') < 6) {
-            this.kmRate = 2.5;
-            this.tariff = 'Weekend+';
-          } else {
-            this.kmRate = 1.5;
-            this.tariff = 'Weekend';
-          }
-          break;
-      }
-    }
   }
 
   public getTariff() {

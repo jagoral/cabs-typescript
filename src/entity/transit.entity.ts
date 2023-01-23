@@ -7,6 +7,7 @@ import { Client, PaymentType } from './client.entity';
 import { Address } from './address.entity';
 import { CarClass } from './car-type.entity';
 import { Money, moneyColumnTransformer } from 'src/money/money';
+import { Tariff } from './tariff';
 
 export enum Status {
   DRAFT = 'draft',
@@ -58,8 +59,6 @@ export enum DayOfWeek {
 
 @Entity()
 export class Transit extends BaseEntity {
-  public static readonly BASE_FEE = 8;
-
   @ManyToOne(() => Driver, (driver) => driver.transits, { eager: true })
   public driver: Driver | null;
 
@@ -104,11 +103,11 @@ export class Transit extends BaseEntity {
   @Column({ default: 0, type: 'integer' })
   public awaitingDriversResponses: number;
 
-  @Column({ nullable: true, type: 'varchar' })
-  public factor: number | null;
-
   @Column({ nullable: false, default: 0 })
   private km: number;
+
+  @Column(() => Tariff)
+  private tariff: Tariff;
 
   // https://stackoverflow.com/questions/37107123/sould-i-store-price-as-decimal-or-integer-in-mysql
   @Column({
@@ -190,6 +189,7 @@ export class Transit extends BaseEntity {
   }
 
   public setDateTime(dateTime: number) {
+    this.tariff = Tariff.ofTime(dateTime);
     this.dateTime = dateTime;
   }
 
@@ -327,58 +327,13 @@ export class Transit extends BaseEntity {
     }
   }
 
+  public getTariff(): Tariff {
+    return this.tariff;
+  }
+
   private calculateCost(): Money {
-    let baseFee = Transit.BASE_FEE;
-    let factorToCalculate = this.factor;
-    if (factorToCalculate == null) {
-      factorToCalculate = 1;
-    }
-    let kmRate: number;
-    const day = new Date(this.dateTime);
-    // wprowadzenie nowych cennikow od 1.01.2019
-    if (day.getFullYear() <= 2018) {
-      kmRate = 1.0;
-      baseFee++;
-    } else {
-      if (
-        (day.getMonth() == Month.DECEMBER && day.getDate() == 31) ||
-        (day.getMonth() == Month.JANUARY &&
-          day.getDate() == 1 &&
-          day.getHours() <= 6)
-      ) {
-        kmRate = 3.5;
-        baseFee += 3;
-      } else {
-        // piątek i sobota po 17 do 6 następnego dnia
-        if (
-          (day.getDay() == DayOfWeek.FRIDAY && day.getHours() >= 17) ||
-          (day.getDay() == DayOfWeek.SATURDAY && day.getHours() <= 6) ||
-          (day.getDay() == DayOfWeek.SATURDAY && day.getHours() >= 17) ||
-          (day.getDay() == DayOfWeek.SUNDAY && day.getHours() <= 6)
-        ) {
-          kmRate = 2.5;
-          baseFee += 2;
-        } else {
-          // pozostałe godziny weekendu
-          if (
-            (day.getDay() == DayOfWeek.SATURDAY &&
-              day.getHours() > 6 &&
-              day.getHours() < 17) ||
-            (day.getDay() == DayOfWeek.SUNDAY && day.getHours() > 6)
-          ) {
-            kmRate = 1.5;
-          } else {
-            // tydzień roboczy
-            kmRate = 1.0;
-            baseFee++;
-          }
-        }
-      }
-    }
-    const priceBigDecimal = Number(
-      (this.km * kmRate * factorToCalculate + baseFee).toFixed(2),
-    );
-    this.price = new Money(priceBigDecimal);
-    return this.price;
+    const price = this.tariff.calculateCost(Distance.ofKm(this.km));
+    this.price = price;
+    return price;
   }
 }

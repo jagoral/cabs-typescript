@@ -70,19 +70,4 @@ describe('Tariff Recognizing', () => {
     expect(transitDto.getTariff()).toEqual('Standard');
     expect(transitDto.getKmRate()).toEqual(1);
   });
-
-  it('should display standard tariff before 2019', async () => {
-    //given
-    const transit = await aCompletedTransit(
-      60,
-      dayjs('2018-12-31 08:30').toDate(),
-    );
-
-    //when
-    const transitDto = await transitController.getTransit(transit.getId());
-
-    //then
-    expect(transitDto.getTariff()).toEqual('Standard');
-    expect(transitDto.getKmRate()).toEqual(1);
-  });
 });

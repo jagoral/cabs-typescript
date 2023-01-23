@@ -3,17 +3,27 @@ import * as dayjs from 'dayjs';
 import * as dayOfYear from 'dayjs/plugin/dayOfYear';
 import { Distance } from 'src/distance/distance';
 import { Money } from 'src/money/money';
+import { Column } from 'typeorm';
 
 dayjs.extend(dayOfYear);
 
 const BASE_FEE = 8;
 
 export class Tariff {
-  private constructor(
-    private readonly kmRate: number,
-    private readonly name: string,
-    private readonly baseFee: number,
-  ) {}
+  @Column({ type: 'double precision' })
+  private readonly kmRate: number;
+
+  @Column()
+  private readonly name: string;
+
+  @Column({ type: 'double precision' })
+  private readonly baseFee: number;
+
+  private constructor(kmRate: number, name: string, baseFee: number) {
+    this.kmRate = kmRate;
+    this.name = name;
+    this.baseFee = baseFee;
+  }
 
   public static ofTime(time: Date | number): Tariff {
     const day = dayjs(time);
