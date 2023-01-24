@@ -2,6 +2,9 @@ import { ForbiddenException } from '@nestjs/common';
 import { Distance } from 'src/distance/distance';
 import { Status, Transit } from './transit.entity';
 import * as dayjs from 'dayjs';
+import { Address } from './address.entity';
+import { CarClass } from './car-type.entity';
+import { Client } from './client.entity';
 
 describe('Calculate Transit Price', () => {
   it('should not calculate price when transit is cancelled', () => {
@@ -105,12 +108,15 @@ describe('Calculate Transit Price', () => {
   });
 
   function createTransit(status: Status, km: number): Transit {
-    const transit = new Transit();
-    transit.setDateTime(new Date().getMilliseconds());
-    // setKm has a side effect, so to avoid an error, status is set to DRAFT
-    transit.setStatus(Status.DRAFT);
-    transit.setKm(Distance.ofKm(km));
-    transit.setStatus(status);
+    const transit = new Transit({
+      when: new Date(),
+      distance: Distance.ofKm(km),
+      status,
+      from: new Address('PL', 'Warszawa', 'Testowa', 1),
+      to: new Address('PL', 'Warszawa', 'Testowa', 1),
+      client: new Client(),
+      carClass: CarClass.VAN,
+    });
     return transit;
   }
 

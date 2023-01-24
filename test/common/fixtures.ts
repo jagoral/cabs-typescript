@@ -1,3 +1,4 @@
+import { Distance } from 'src/distance/distance';
 import { CreateCarTypeDto } from 'src/dto/create-car-type.dto';
 import { CreateTransitDto } from 'src/dto/create-transit.dto';
 import { Address } from 'src/entity/address.entity';
@@ -9,7 +10,7 @@ import {
 } from 'src/entity/client.entity';
 import { DriverFee, FeeType } from 'src/entity/driver-fee.entity';
 import { Driver, DriverStatus } from 'src/entity/driver.entity';
-import { Status, Transit } from 'src/entity/transit.entity';
+import { Transit } from 'src/entity/transit.entity';
 import { Money } from 'src/money/money';
 import { AddressRepository } from 'src/repository/address.repository';
 import { ClientRepository } from 'src/repository/client.repository';
@@ -68,14 +69,22 @@ export async function aTransit(
   driver: Driver | null,
   price: number,
   when = new Date(),
+  address?: Record<'from' | 'to', Address>,
 ): Promise<Transit> {
   const transitRepository = await getTestService(TransitRepository);
-  const transit = new Transit();
+  const transit = new Transit({
+    when,
+    distance: Distance.ofKm(10),
+    carClass: CarClass.VAN,
+    client: await aClient(),
+    from: address?.from || (await anAddress()),
+    to: address?.to || (await anAddress()),
+  });
   transit.setPrice(new Money(price));
-  transit.setDriver(driver);
-  transit.setDateTime(when.getTime());
-  transit.setStatus(Status.DRAFT);
-  transit.setCarType(CarClass.ECO);
+  if (driver) {
+    transit.proposeTo(driver);
+    transit.acceptBy(driver, when);
+  }
   return transitRepository.save(transit);
 }
 
@@ -84,14 +93,14 @@ export async function aCompletedTransit(
   when = new Date(),
 ): Promise<Transit> {
   const transitRepository = await getTestService(TransitRepository);
-  const transit = await aTransit(null, price, when);
   const [toAddress, fromAddress] = await Promise.all([
     anAddress(),
     anAddress(),
   ]);
-  transit.setTo(toAddress);
-  transit.setFrom(fromAddress);
-  transit.setClient(await aClient());
+  const transit = await aTransit(null, price, when, {
+    from: fromAddress,
+    to: toAddress,
+  });
   return transitRepository.save(transit);
 }
 

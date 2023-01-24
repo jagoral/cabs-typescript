@@ -1,5 +1,5 @@
 import { Distance } from './../distance/distance';
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, NotAcceptableException } from '@nestjs/common';
 import { BaseEntity } from '../common/base.entity';
 import {
   Column,
@@ -15,6 +15,8 @@ import { Address } from './address.entity';
 import { CarClass } from './car-type.entity';
 import { Money, moneyColumnTransformer } from 'src/money/money';
 import { Tariff } from './tariff';
+import * as dayjs from 'dayjs';
+import { isInArray } from 'src/common/array.utils';
 
 export enum Status {
   DRAFT = 'draft',
@@ -62,6 +64,23 @@ export enum DayOfWeek {
   THURSDAY,
   FRIDAY,
   SATURDAY,
+}
+
+interface TransitConstructor {
+  from: Address;
+  to: Address;
+  client: Client;
+  carClass: CarClass;
+  when: Date;
+  distance: Distance;
+}
+
+type TransitTestConstructor = { status: Status } & TransitConstructor;
+
+function isTransitTestConstructor(
+  input: TransitConstructor | TransitTestConstructor,
+): input is TransitTestConstructor {
+  return !!(input as TransitTestConstructor).status;
 }
 
 @Entity()
@@ -156,6 +175,27 @@ export class Transit extends BaseEntity {
   @Column({ type: 'bigint', nullable: true })
   private completeAt: number;
 
+  constructor(input?: TransitConstructor | TransitTestConstructor) {
+    super();
+    if (!input) {
+      return;
+    }
+    this.from = input.from;
+    this.to = input.to;
+    this.carType = input.carClass;
+    this.setDateTime(input.when.getTime());
+    this.client = input.client;
+    this.km = input.distance.toKmInNumber();
+    this.estimateCost();
+    this.awaitingDriversResponses = 0;
+    this.pickupAddressChangeCounter = 0;
+    if (isTransitTestConstructor(input)) {
+      this.status = input.status;
+    } else {
+      this.status = Status.DRAFT;
+    }
+  }
+
   public getCarType() {
     return this.carType as CarClass;
   }
@@ -181,20 +221,12 @@ export class Transit extends BaseEntity {
     return this.status;
   }
 
-  public setStatus(status: Status) {
-    this.status = status;
-  }
-
   public getCompleteAt() {
     return this.completeAt;
   }
 
   public getClient() {
     return this.client;
-  }
-
-  public setClient(client: Client) {
-    this.client = client;
   }
 
   public setDateTime(dateTime: number) {
@@ -210,89 +242,32 @@ export class Transit extends BaseEntity {
     return +this.published;
   }
 
-  public setPublished(published: number) {
-    this.published = published;
-  }
-
-  public setDriver(driver: Driver | null) {
-    this.driver = driver;
-  }
-
   public getKm() {
     return Distance.ofKm(this.km);
-  }
-
-  public setKm(km: Distance) {
-    this.km = km.toKmInNumber();
-    this.estimateCost();
   }
 
   public getAwaitingDriversResponses() {
     return this.awaitingDriversResponses;
   }
 
-  public setAwaitingDriversResponses(proposedDriversCounter: number) {
-    this.awaitingDriversResponses = proposedDriversCounter;
-  }
-
-  public getDriversRejections() {
-    return this.driversRejections || [];
-  }
-
-  public setDriversRejections(driversRejections: Driver[]) {
-    this.driversRejections = driversRejections;
-  }
-
   public getProposedDrivers() {
     return this.proposedDrivers || [];
-  }
-
-  public setProposedDrivers(proposedDrivers: Driver[]) {
-    this.proposedDrivers = proposedDrivers;
   }
 
   public getAcceptedAt() {
     return this.acceptedAt;
   }
 
-  public setAcceptedAt(acceptedAt: number) {
-    this.acceptedAt = acceptedAt;
-  }
-
   public getStarted() {
     return this.started;
-  }
-
-  public setStarted(started: number) {
-    this.started = started;
   }
 
   public getFrom() {
     return this.from;
   }
 
-  public setFrom(from: Address) {
-    this.from = from;
-  }
-
   public getTo() {
     return this.to;
-  }
-
-  public setTo(to: Address) {
-    this.to = to;
-  }
-
-  public getPickupAddressChangeCounter() {
-    return this.pickupAddressChangeCounter;
-  }
-
-  public setPickupAddressChangeCounter(pickupChanges: number) {
-    this.pickupAddressChangeCounter = pickupChanges;
-  }
-
-  public setCompleteAt(when: number) {
-    this.completeAt = when;
   }
 
   public getDriversFee() {
@@ -338,6 +313,153 @@ export class Transit extends BaseEntity {
 
   public getTariff(): Tariff {
     return this.tariff;
+  }
+
+  public changePickupTo(
+    newAddress: Address,
+    distance: Distance,
+    distanceFromPreviousPickup: number,
+  ): void {
+    if (
+      (this.status !== Status.DRAFT &&
+        this.status !== Status.WAITING_FOR_DRIVER_ASSIGNMENT) ||
+      this.pickupAddressChangeCounter > 2 ||
+      distanceFromPreviousPickup > 0.25
+    ) {
+      throw new NotAcceptableException(
+        "Address 'from' cannot be changed, id = " + this.getId(),
+      );
+    }
+
+    this.from = newAddress;
+    this.km = distance.toKmInNumber();
+    this.estimateCost();
+    this.pickupAddressChangeCounter++;
+  }
+
+  public cancel(): void {
+    if (
+      ![
+        Status.DRAFT,
+        Status.WAITING_FOR_DRIVER_ASSIGNMENT,
+        Status.TRANSIT_TO_PASSENGER,
+      ].includes(this.status)
+    ) {
+      throw new NotAcceptableException(
+        'Transit cannot be cancelled, id = ' + this.getId(),
+      );
+    }
+
+    this.status = Status.CANCELLED;
+    this.driver = null;
+    this.km = Distance.ZERO.toKmInNumber();
+    this.awaitingDriversResponses = 0;
+  }
+
+  public changeDestinationTo(newAddress: Address, newDistance: Distance): void {
+    if (this.status === Status.COMPLETED) {
+      throw new NotAcceptableException(
+        "Address 'to' cannot be changed, id = " + this.getId(),
+      );
+    }
+
+    this.to = newAddress;
+    this.km = newDistance.toKmInNumber();
+    this.estimateCost();
+  }
+
+  public publishAt(when: Date): void {
+    this.status = Status.WAITING_FOR_DRIVER_ASSIGNMENT;
+    this.published = when.getTime();
+  }
+
+  public completeTransitAt(
+    when: Date,
+    destinationAddress: Address,
+    distance: Distance,
+  ): void {
+    if (this.status === Status.IN_TRANSIT) {
+      // FIXME later: add some exceptions handling
+
+      this.to = destinationAddress;
+      this.km = distance.toKmInNumber();
+      this.estimateCost();
+      this.status = Status.COMPLETED;
+      this.completeAt = when.getTime();
+      this.calculateFinalCosts();
+    } else {
+      throw new NotAcceptableException(
+        'Cannot complete Transit, id = ' + this.getId(),
+      );
+    }
+  }
+
+  public shouldNotWaitForDriverAnyMore(date: Date): boolean {
+    return (
+      this.status === Status.CANCELLED ||
+      dayjs(+this.getPublished())
+        .add(300, 'seconds')
+        .isBefore(date)
+    );
+  }
+
+  public failDriverAssignment(): void {
+    this.status = Status.DRIVER_ASSIGNMENT_FAILED;
+    this.driver = null;
+    this.km = Distance.ZERO.toKmInNumber();
+    this.awaitingDriversResponses = 0;
+  }
+
+  public canProposeTo(driver: Driver): boolean {
+    return !isInArray(this.driversRejections || [], driver);
+  }
+
+  public proposeTo(driver: Driver): void {
+    if (this.canProposeTo(driver)) {
+      this.proposedDrivers = [...this.getProposedDrivers(), driver];
+      this.awaitingDriversResponses++;
+    }
+  }
+
+  public acceptBy(driver: Driver, date: Date): void {
+    if (this.driver) {
+      throw new NotAcceptableException(
+        'Transit already accepted, id = ' + this.getId(),
+      );
+    } else {
+      if (!isInArray(this.getProposedDrivers(), driver)) {
+        throw new NotAcceptableException(
+          'Driver out of possible drivers, id = ' + this.getId(),
+        );
+      } else {
+        if (isInArray(this.driversRejections || [], driver)) {
+          throw new NotAcceptableException(
+            'Driver out of possible drivers, id = ' + this.getId(),
+          );
+        } else {
+          this.driver = driver;
+          this.awaitingDriversResponses = 0;
+          this.acceptedAt = date.getTime();
+          this.status = Status.TRANSIT_TO_PASSENGER;
+        }
+      }
+    }
+  }
+
+  public start(date: Date): void {
+    if (this.status !== Status.TRANSIT_TO_PASSENGER) {
+      throw new NotAcceptableException(
+        'Transit cannot be started, id = ' + this.getId(),
+      );
+    }
+
+    this.status = Status.IN_TRANSIT;
+    this.started = date.getTime();
+  }
+
+  public reject(driver: Driver): void {
+    this.driversRejections = [...(this.driversRejections || []), driver];
+    this.awaitingDriversResponses--;
   }
 
   private calculateCost(): Money {

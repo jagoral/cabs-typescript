@@ -1,8 +1,9 @@
 import { NotAcceptableException } from '@nestjs/common';
 import { Distance } from 'src/distance/distance';
 import { Address } from 'src/entity/address.entity';
+import { CarClass } from 'src/entity/car-type.entity';
 import { Client } from 'src/entity/client.entity';
-import { Status, Transit } from 'src/entity/transit.entity';
+import { Transit } from 'src/entity/transit.entity';
 import { Money } from 'src/money/money';
 import { TransitDto } from './transit.dto';
 
@@ -36,14 +37,15 @@ describe('Calculate Transit Distance', () => {
   );
 
   function transitForDistance(km: number): TransitDto {
-    const transit = new Transit();
+    const transit = new Transit({
+      from: new Address('PL', 'Warszawa', 'ul. Testowa 1', 1),
+      to: new Address('PL', 'Warszawa', 'ul. Testowa 1', 1),
+      distance: Distance.ofKm(km),
+      client: new Client(),
+      when: new Date(),
+      carClass: CarClass.VAN,
+    });
     transit.setPrice(new Money(10));
-    transit.setDateTime(new Date().getTime());
-    transit.setTo(new Address('PL', 'Warszawa', 'ul. Testowa 1', 1));
-    transit.setFrom(new Address('PL', 'Warszawa', 'ul. Testowa 1', 1));
-    transit.setStatus(Status.DRAFT);
-    transit.setKm(Distance.ofKm(km));
-    transit.setClient(new Client());
     return new TransitDto(transit);
   }
 });
