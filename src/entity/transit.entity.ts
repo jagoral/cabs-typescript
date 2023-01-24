@@ -1,7 +1,14 @@
 import { Distance } from './../distance/distance';
 import { ForbiddenException } from '@nestjs/common';
 import { BaseEntity } from '../common/base.entity';
-import { Column, Entity, JoinColumn, ManyToMany, ManyToOne } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  JoinTable,
+  ManyToMany,
+  ManyToOne,
+} from 'typeorm';
 import { Driver } from './driver.entity';
 import { Client, PaymentType } from './client.entity';
 import { Address } from './address.entity';
@@ -95,9 +102,11 @@ export class Transit extends BaseEntity {
   public pickupAddressChangeCounter: number;
 
   @ManyToMany(() => Driver)
+  @JoinTable()
   public driversRejections: Driver[];
 
   @ManyToMany(() => Driver)
+  @JoinTable()
   public proposedDrivers: Driver[];
 
   @Column({ default: 0, type: 'integer' })
@@ -141,7 +150,7 @@ export class Transit extends BaseEntity {
   @JoinColumn()
   private client: Client;
 
-  @Column()
+  @Column({ nullable: true })
   private carType: CarClass;
 
   @Column({ type: 'bigint', nullable: true })
@@ -198,7 +207,7 @@ export class Transit extends BaseEntity {
   }
 
   public getPublished() {
-    return this.published;
+    return +this.published;
   }
 
   public setPublished(published: number) {

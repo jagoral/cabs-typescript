@@ -12,19 +12,34 @@ export class DriverPositionRepository extends Repository<DriverPosition> {
     longitudeMax: number,
     date: number,
   ): Promise<DriverPositionV2Dto[]> {
-    const driverPosition = await this.createQueryBuilder('driverPosition')
+    let driverPosition = await this.createQueryBuilder('driverPosition')
       .leftJoinAndSelect('driverPosition.driver', 'p')
-      .select(`AVG(p.latitude), AVG(p.longitude), MAX(p.seenAt)`)
-      .where('p.longitude between :longitudeMin and :longitudeMax')
-      .andWhere('p.longitude between :longitudeMin and :longitudeMax')
-      .andWhere('p.seenAt >= :seenAt')
-      .groupBy('p.driver.id')
+      .select(
+        `AVG(latitude) AS latitude, AVG(longitude) AS longitude, MAX("seenAt") AS "seenAt", "driverId"`,
+      )
+      .where('longitude between :longitudeMin and :longitudeMax')
+      .andWhere('latitude between :latitudeMin and :latitudeMax')
+      .andWhere('"seenAt" >= :seenAt')
+      .groupBy('"driverId"')
       .setParameters({
+        latitudeMin,
+        latitudeMax,
         longitudeMin,
         longitudeMax,
         seenAt: date,
       })
-      .getMany();
+      .printSql()
+      .getRawMany();
+    // it could be optimized
+    driverPosition = await Promise.all(
+      driverPosition.map(async (dp) => ({
+        ...dp,
+        driver: await this.findOneOrFail({
+          relations: ['driver'],
+          where: { driver: { id: dp.driverId } },
+        }).then((position) => position.driver),
+      })),
+    );
 
     return driverPosition.map(
       (dp) =>

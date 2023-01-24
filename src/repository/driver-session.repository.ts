@@ -1,4 +1,4 @@
-import { EntityRepository, MoreThan, Repository, IsNull } from 'typeorm';
+import { EntityRepository, MoreThan, Repository, IsNull, In } from 'typeorm';
 import { DriverSession } from '../entity/driver-session.entity';
 import { CarClass } from '../entity/car-type.entity';
 import { Driver } from '../entity/driver.entity';
@@ -10,8 +10,16 @@ export class DriverSessionRepository extends Repository<DriverSession> {
     drivers: Driver[],
     carClasses: CarClass[],
   ): Promise<DriverSession[]> {
-    console.log('To implement...', drivers, carClasses);
-    return [];
+    return this.find({
+      relations: ['driver'],
+      where: {
+        driver: {
+          id: In(drivers.map((driver) => driver.getId())),
+        },
+        loggedOutAt: IsNull(),
+        carClass: In(carClasses),
+      },
+    });
   }
 
   public async findTopByDriverAndLoggedOutAtIsNullOrderByLoggedAtDesc(

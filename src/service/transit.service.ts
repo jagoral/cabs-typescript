@@ -426,7 +426,10 @@ export class TransitService {
                 if (
                   !Array.from(transit.getDriversRejections()).includes(driver)
                 ) {
-                  transit.getProposedDrivers().push(driver);
+                  transit.setProposedDrivers([
+                    ...transit.getProposedDrivers(),
+                    driver,
+                  ]);
                   transit.setAwaitingDriversResponses(
                     transit.getAwaitingDriversResponses() + 1,
                   );
@@ -462,7 +465,9 @@ export class TransitService {
     if (!driver) {
       throw new NotFoundException('Driver does not exist, id = ' + driverId);
     } else {
-      const transit = await this.transitRepository.findOne(transitId);
+      const transit = await this.transitRepository.findOne(transitId, {
+        relations: ['proposedDrivers', 'driversRejections'],
+      });
 
       if (!transit) {
         throw new NotFoundException(
@@ -474,12 +479,12 @@ export class TransitService {
             'Transit already accepted, id = ' + transitId,
           );
         } else {
-          if (!Array.from(transit.getProposedDrivers()).includes(driver)) {
+          if (!this.isInArray(transit.getProposedDrivers(), driver)) {
             throw new NotAcceptableException(
               'Driver out of possible drivers, id = ' + transitId,
             );
           } else {
-            if (Array.from(transit.getDriversRejections()).includes(driver)) {
+            if (this.isInArray(transit.getDriversRejections(), driver)) {
               throw new NotAcceptableException(
                 'Driver out of possible drivers, id = ' + transitId,
               );
@@ -536,6 +541,7 @@ export class TransitService {
     }
 
     transit.getDriversRejections().push(driver);
+    transit.setDriversRejections([...transit.getDriversRejections(), driver]);
     transit.setAwaitingDriversResponses(
       transit.getAwaitingDriversResponses() - 1,
     );
@@ -626,5 +632,14 @@ export class TransitService {
   private async addressFromDto(addressDTO: AddressDto) {
     const address = addressDTO.toAddressEntity();
     return this.addressRepository.save(address);
+  }
+
+  private isInArray<T extends { getId(): string }>(
+    array: T[],
+    element: T,
+  ): boolean {
+    return array
+      .map((singleItem) => singleItem.getId())
+      .includes(element.getId());
   }
 }
