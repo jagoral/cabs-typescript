@@ -1,3 +1,5 @@
+import { CreateCarTypeDto } from 'src/dto/create-car-type.dto';
+import { CreateTransitDto } from 'src/dto/create-transit.dto';
 import { Address } from 'src/entity/address.entity';
 import { CarClass } from 'src/entity/car-type.entity';
 import {
@@ -13,6 +15,7 @@ import { AddressRepository } from 'src/repository/address.repository';
 import { ClientRepository } from 'src/repository/client.repository';
 import { DriverFeeRepository } from 'src/repository/driver-fee.repository';
 import { TransitRepository } from 'src/repository/transit.repository';
+import { CarTypeService } from 'src/service/car-type.service';
 import { DriverService } from 'src/service/driver.service';
 import { getTestService } from 'test/setup/test-server';
 
@@ -90,4 +93,30 @@ export async function aCompletedTransit(
   transit.setFrom(fromAddress);
   transit.setClient(await aClient());
   return transitRepository.save(transit);
+}
+
+export async function aTransitDTO(
+  pickup: CreateTransitDto['from'],
+  destination: CreateTransitDto['to'],
+  client?: Client,
+): Promise<CreateTransitDto> {
+  const transitDto = new CreateTransitDto();
+  transitDto.from = pickup;
+  transitDto.to = destination;
+  transitDto.clientId =
+    client?.getId() || (await aClient().then((c) => c.getId()));
+  return transitDto;
+}
+
+export async function anActiveCarCategory(carClass: CarClass) {
+  const carTypeService = await getTestService(CarTypeService);
+  const carTypeDto = new CreateCarTypeDto();
+  carTypeDto.carClass = carClass;
+  carTypeDto.description = 'opis';
+  const carType = await carTypeService.create(carTypeDto);
+  for (let i = 0; i < carType.getMinNoOfCarsToActivateClass(); i++) {
+    await carTypeService.registerCar(carType.getCarClass());
+  }
+  await carTypeService.activate(carType.getId());
+  return carType;
 }
