@@ -99,7 +99,9 @@ export class CarTypeService {
   }
 
   public async removeCarType(carClass: CarClass) {
-    const carType = await this.carTypeRepository.findByCarClass(carClass);
+    const carType = await this.carTypeRepository
+      .findByCarClass(carClass)
+      .catch(() => null);
     if (carType) {
       await this.carTypeRepository.delete(carType);
     }
