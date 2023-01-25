@@ -5,7 +5,10 @@ import { DriverController } from './controllers/driver.controller';
 import { DriverService } from './service/driver.service';
 import { DriverRepository } from './repository/driver.repository';
 import { AppProperties } from './config/app-properties.config';
-import { CarTypeRepository } from './repository/car-type.repository';
+import {
+  CarTypeActiveCounterRepository,
+  CarTypeRepository,
+} from './repository/car-type.repository';
 import { CarTypeController } from './controllers/car-type.controller';
 import { CarTypeService } from './service/car-type.service';
 import { DistanceCalculator } from './service/distance-calculator.service';
@@ -66,6 +69,7 @@ import { DriverReportController } from './controllers/driver-report.controller';
     TypeOrmModule.forFeature([
       DriverRepository,
       CarTypeRepository,
+      CarTypeActiveCounterRepository,
       InvoiceRepository,
       ClaimRepository,
       ClientRepository,

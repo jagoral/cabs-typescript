@@ -14,14 +14,14 @@ describe('Car Type Update', () => {
 
   it('should create car type', async () => {
     //given
-    await thereIsNoCarClassInTheSystem(CarClass.VAN);
+    await thereIsNoCarClassInTheSystem(CarClass.ECO);
 
     //when
-    const created = await createCarClass('duze i dobre', CarClass.VAN);
+    const created = await createCarClass('duze i dobre', CarClass.ECO);
 
     //then
     expect(created).toMatchObject({
-      carClass: CarClass.VAN,
+      carClass: CarClass.ECO,
       description: 'duze i dobre',
       carsCounter: 0,
       activeCarsCounter: 0,
@@ -30,16 +30,16 @@ describe('Car Type Update', () => {
 
   it('should change car description', async () => {
     //given
-    await thereIsNoCarClassInTheSystem(CarClass.VAN);
+    await thereIsNoCarClassInTheSystem(CarClass.ECO);
     //and
-    await createCarClass('duze i dobre', CarClass.VAN);
+    await createCarClass('duze i dobre', CarClass.ECO);
 
     //when
-    const changed = await createCarClass('duze i bardzo dobre', CarClass.VAN);
+    const changed = await createCarClass('duze i bardzo dobre', CarClass.ECO);
 
     //then
     expect(changed).toMatchObject({
-      carClass: CarClass.VAN,
+      carClass: CarClass.ECO,
       description: 'duze i bardzo dobre',
       carsCounter: 0,
     });
@@ -47,10 +47,10 @@ describe('Car Type Update', () => {
 
   it('should register active cars', async () => {
     //given
-    const created = await createCarClass('duze i dobre', CarClass.VAN);
+    const created = await createCarClass('duze i dobre', CarClass.ECO);
 
     //when
-    await registerActiveCar(CarClass.VAN);
+    await registerActiveCar(CarClass.ECO);
 
     //then
     const loaded = await load(created.id);
@@ -59,10 +59,10 @@ describe('Car Type Update', () => {
 
   it('should unregister active cars', async () => {
     //given
-    const created = await createCarClass('duze i dobre', CarClass.VAN);
+    const created = await createCarClass('duze i dobre', CarClass.ECO);
 
     //when
-    await unregisterActiveCar(CarClass.VAN);
+    await unregisterActiveCar(CarClass.ECO);
 
     //then
     const loaded = await load(created.id);

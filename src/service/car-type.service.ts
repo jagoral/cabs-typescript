@@ -1,16 +1,22 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CarTypeRepository } from '../repository/car-type.repository';
+import {
+  CarTypeActiveCounterRepository,
+  CarTypeRepository,
+} from '../repository/car-type.repository';
 import { AppProperties } from '../config/app-properties.config';
 import { CarClass, CarStatus, CarType } from '../entity/car-type.entity';
 import { CreateCarTypeDto } from '../dto/create-car-type.dto';
 import { CarTypeDto } from '../dto/car-type.dto';
+import { CarTypeActiveCounter } from 'src/entity/car-type-active-counter.entity';
 
 @Injectable()
 export class CarTypeService {
   constructor(
     @InjectRepository(CarTypeRepository)
     private carTypeRepository: CarTypeRepository,
+    @InjectRepository(CarTypeActiveCounterRepository)
+    private carTypeActiveCounterRepository: CarTypeActiveCounterRepository,
     private readonly appProperties: AppProperties,
   ) {}
 
@@ -24,7 +30,10 @@ export class CarTypeService {
 
   public async loadDto(id: string): Promise<CarTypeDto> {
     const carType = await this.load(id);
-    return new CarTypeDto(carType);
+    const activeCounter = await this.carTypeActiveCounterRepository.findOne(
+      carType.getCarClass(),
+    );
+    return new CarTypeDto(carType, activeCounter?.getActiveCarsCounter() || 0);
   }
 
   public async create(carTypeDTO: CreateCarTypeDto): Promise<CarType> {
@@ -33,6 +42,9 @@ export class CarTypeService {
         carTypeDTO.carClass,
       );
       byCarClass.setDescription(carTypeDTO.description);
+      await this.carTypeActiveCounterRepository.save(
+        new CarTypeActiveCounter(carTypeDTO.carClass),
+      );
       return this.carTypeRepository.save(byCarClass);
     } catch {
       const carType = new CarType(
@@ -78,19 +90,11 @@ export class CarTypeService {
   }
 
   public async registerActiveCar(carClass: CarClass) {
-    const carType = await this.carTypeRepository.findByCarClass(carClass);
-
-    carType.registerActiveCar();
-
-    await this.carTypeRepository.save(carType);
+    await this.carTypeActiveCounterRepository.incrementCounter(carClass);
   }
 
   public async unregisterActiveCar(carClass: CarClass) {
-    const carType = await this.carTypeRepository.findByCarClass(carClass);
-
-    carType.unregisterActiveCar();
-
-    await this.carTypeRepository.save(carType);
+    await this.carTypeActiveCounterRepository.decrementCounter(carClass);
   }
 
   public async findActiveCarClasses() {
@@ -104,6 +108,7 @@ export class CarTypeService {
       .catch(() => null);
     if (carType) {
       await this.carTypeRepository.delete(carType);
+      await this.carTypeActiveCounterRepository.delete(carClass);
     }
   }
 
