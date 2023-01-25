@@ -167,7 +167,7 @@ describe('TransitEntity', () => {
       );
 
       //then
-      expect(transit.getCarType()).toBeNil();
+      expect(transit.getCarType()).toEqual(CarClass.VAN);
       expect(transit.getEstimatedPrice()).not.toBeNil();
       expect(transit.getPrice()).toBeNil();
       expect(transit.getFrom()).toMatchObject({
