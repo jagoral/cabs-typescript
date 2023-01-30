@@ -1,8 +1,11 @@
 import { Distance } from 'src/distance/distance';
+import { ClaimDto } from 'src/dto/claim.dto';
 import { CreateCarTypeDto } from 'src/dto/create-car-type.dto';
+import { CreateClaimDto } from 'src/dto/create-claim.dto';
 import { CreateTransitDto } from 'src/dto/create-transit.dto';
 import { Address } from 'src/entity/address.entity';
 import { CarClass } from 'src/entity/car-type.entity';
+import { Claim } from 'src/entity/claim.entity';
 import {
   Client,
   PaymentType,
@@ -17,17 +20,69 @@ import { ClientRepository } from 'src/repository/client.repository';
 import { DriverFeeRepository } from 'src/repository/driver-fee.repository';
 import { TransitRepository } from 'src/repository/transit.repository';
 import { CarTypeService } from 'src/service/car-type.service';
+import { ClaimService } from 'src/service/claim.service';
 import { DriverService } from 'src/service/driver.service';
 import { getTestService } from 'test/setup/test-server';
+import { TransitOverrides, CompletedTransitOverrides } from './fixtures.types';
 
-export async function aClient() {
+export async function aClient(clientType = ClientType.NORMAL): Promise<Client> {
   const clientRepository = await getTestService(ClientRepository);
   const client = new Client();
-  client.setType(ClientType.NORMAL);
+  client.setType(clientType);
   client.setName('Jan');
   client.setLastName('Kowalski');
   client.setDefaultPaymentType(PaymentType.PRE_PAID);
   return clientRepository.save(client);
+}
+
+export async function createClaim(
+  client: Client,
+  transit: Transit,
+  overrides?: CreateClaimDto,
+): Promise<Claim> {
+  let createClaimDto = overrides;
+  if (!createClaimDto) {
+    createClaimDto = new CreateClaimDto();
+    createClaimDto.incidentDescription = 'Okradli mnie na hajs';
+    createClaimDto.reason = '$$$';
+    createClaimDto.clientId = client.getId();
+    createClaimDto.transitId = transit.getId();
+  }
+  const claimDto = new ClaimDto(createClaimDto);
+  claimDto.setDraft(false);
+  const claimService = await getTestService(ClaimService);
+  return claimService.create(claimDto);
+}
+
+export async function createAndResolveClaim(
+  client: Client,
+  transit: Transit,
+): Promise<Claim> {
+  const claim = await createClaim(client, transit);
+  const claimService = await getTestService(ClaimService);
+  return claimService.tryToResolveAutomatically(claim.getId());
+}
+
+export async function clientHasDoneClaims(
+  client: Client,
+  noOfClaims: number,
+): Promise<void> {
+  const resolveClaim = async () => {
+    const driver = await aDriver();
+    const transit = await aTransit(driver, 20, new Date(), { client });
+    return createAndResolveClaim(client, transit);
+  };
+
+  await Promise.all(Array.from({ length: noOfClaims }).map(resolveClaim));
+}
+
+export async function aClientWithClaims(
+  clientType: ClientType,
+  noOfClaims: number,
+): Promise<Client> {
+  const client = await aClient(clientType);
+  await clientHasDoneClaims(client, noOfClaims);
+  return client;
 }
 
 export async function anAddress(): Promise<Address> {
@@ -69,14 +124,15 @@ export async function aTransit(
   driver: Driver | null,
   price: number,
   when = new Date(),
-  address?: Record<'from' | 'to', Address>,
+  overrides: TransitOverrides = {},
 ): Promise<Transit> {
   const transitRepository = await getTestService(TransitRepository);
+  const { address, client } = overrides;
   const transit = new Transit({
     when,
     distance: Distance.ofKm(10),
     carClass: CarClass.VAN,
-    client: await aClient(),
+    client: client || (await aClient()),
     from: address?.from || (await anAddress()),
     to: address?.to || (await anAddress()),
   });
@@ -91,17 +147,33 @@ export async function aTransit(
 export async function aCompletedTransit(
   price: number,
   when = new Date(),
+  overrides: CompletedTransitOverrides = {},
 ): Promise<Transit> {
-  const transitRepository = await getTestService(TransitRepository);
+  const { driver, ...transitOverrides } = overrides;
   const [toAddress, fromAddress] = await Promise.all([
     anAddress(),
     anAddress(),
   ]);
-  const transit = await aTransit(null, price, when, {
-    from: fromAddress,
-    to: toAddress,
+  const transit = await aTransit(driver || (await aDriver()), price, when, {
+    address: {
+      from: fromAddress,
+      to: toAddress,
+    },
+    ...transitOverrides,
   });
-  return transitRepository.save(transit);
+  return transit;
+}
+
+export async function clientHasDoneTransits(
+  client: Client,
+  noOfTransits: number,
+): Promise<void> {
+  const toCompletedTransit = async () =>
+    aCompletedTransit(10, new Date(), { client, driver: await aDriver() });
+
+  await Promise.all(
+    Array.from({ length: noOfTransits }).map(toCompletedTransit),
+  );
 }
 
 export async function aTransitDTO(
