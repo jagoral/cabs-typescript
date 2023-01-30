@@ -8,6 +8,7 @@ import {
   JoinTable,
   ManyToMany,
   ManyToOne,
+  OneToMany,
 } from 'typeorm';
 import { Driver } from './driver.entity';
 import { Client, PaymentType } from './client.entity';
@@ -17,6 +18,7 @@ import { Money, moneyColumnTransformer } from 'src/money/money';
 import { Tariff } from './tariff';
 import * as dayjs from 'dayjs';
 import { isInArray } from 'src/common/array.utils';
+import { Claim } from './claim.entity';
 
 export enum Status {
   DRAFT = 'draft',
@@ -174,6 +176,9 @@ export class Transit extends BaseEntity {
 
   @Column({ type: 'bigint', nullable: true })
   private completeAt: number;
+
+  @OneToMany(() => Claim, (claim) => claim.transit)
+  public claims: Claim[];
 
   constructor(input?: TransitConstructor | TransitTestConstructor) {
     super();

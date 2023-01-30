@@ -17,7 +17,7 @@ export class ClaimNumberGenerator {
     if (count === 0) {
       prefix = 1;
     }
-    const DATE_TIME_FORMAT = 'dd/MM/yyyy';
+    const DATE_TIME_FORMAT = 'DD/MM/YYYY';
     return (
       prefix +
       count +

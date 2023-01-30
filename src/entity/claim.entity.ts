@@ -1,6 +1,6 @@
+import { Column, Entity, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../common/base.entity';
 import { Client } from './client.entity';
-import { Column, Entity, JoinColumn, ManyToOne, OneToOne } from 'typeorm';
 import { Transit } from './transit.entity';
 
 export enum ClaimStatus {
@@ -22,9 +22,8 @@ export class Claim extends BaseEntity {
   @ManyToOne(() => Client, (client) => client.claims)
   public owner: Client;
 
-  @OneToOne(() => Transit)
-  @JoinColumn()
-  private transit: Transit;
+  @ManyToOne(() => Transit, (transit) => transit.claims)
+  public transit: Transit;
 
   @Column({ type: 'bigint' })
   private creationDate: number;

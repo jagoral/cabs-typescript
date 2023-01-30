@@ -28,10 +28,11 @@ export class ClaimDto {
 
   public constructor(claim: Claim | CreateClaimDto) {
     if (!(claim instanceof Claim)) {
-      this.setClaimID(claim.clientId);
+      this.setClientId(claim.clientId);
       this.setReason(claim.reason);
       this.setDraft(true);
       this.setIncidentDescription(claim.incidentDescription);
+      this.setTransitId(claim.transitId);
     } else {
       if (claim.getStatus() === ClaimStatus.DRAFT) {
         this.setDraft(true);

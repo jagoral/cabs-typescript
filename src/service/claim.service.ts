@@ -37,7 +37,9 @@ export class ClaimService {
   }
 
   public async find(id: string): Promise<Claim> {
-    const claim = await this.claimRepository.findOne(id);
+    const claim = await this.claimRepository.findOne(id, {
+      relations: ['owner', 'transit'],
+    });
     if (!claim) {
       throw new NotFoundException('Claim does not exists');
     }
@@ -76,6 +78,11 @@ export class ClaimService {
   }
 
   public async tryToResolveAutomatically(id: string): Promise<Claim> {
+    const claim = await this._tryToResolveAutomatically(id);
+    return this.claimRepository.save(claim);
+  }
+
+  private async _tryToResolveAutomatically(id: string): Promise<Claim> {
     const claim = await this.find(id);
     if (
       (
@@ -166,10 +173,13 @@ export class ClaimService {
         claim.setCompletionDate(Date.now());
         claim.setChangeDate(Date.now());
         claim.setCompletionMode(CompletionMode.MANUAL);
-        await this.driverNotificationService.askDriverForDetailsAboutClaim(
-          claim.getClaimNo(),
-          claim.getOwner().getId(),
-        );
+        const driver = claim.getTransit().getDriver();
+        if (driver) {
+          await this.driverNotificationService.askDriverForDetailsAboutClaim(
+            claim.getClaimNo(),
+            driver.getId(),
+          );
+        }
       }
     }
 
