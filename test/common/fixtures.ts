@@ -19,6 +19,7 @@ import { AddressRepository } from 'src/repository/address.repository';
 import { ClientRepository } from 'src/repository/client.repository';
 import { DriverFeeRepository } from 'src/repository/driver-fee.repository';
 import { TransitRepository } from 'src/repository/transit.repository';
+import { AwardsService } from 'src/service/awards.service';
 import { CarTypeService } from 'src/service/car-type.service';
 import { ClaimService } from 'src/service/claim.service';
 import { DriverService } from 'src/service/driver.service';
@@ -27,12 +28,15 @@ import { TransitOverrides, CompletedTransitOverrides } from './fixtures.types';
 
 export async function aClient(clientType = ClientType.NORMAL): Promise<Client> {
   const clientRepository = await getTestService(ClientRepository);
+  const awardService = await getTestService(AwardsService);
   const client = new Client();
   client.setType(clientType);
   client.setName('Jan');
   client.setLastName('Kowalski');
   client.setDefaultPaymentType(PaymentType.PRE_PAID);
-  return clientRepository.save(client);
+  const entity = await clientRepository.save(client);
+  await awardService.registerToProgram(entity.getId());
+  return entity;
 }
 
 export async function createClaim(
@@ -73,7 +77,9 @@ export async function clientHasDoneClaims(
     return createAndResolveClaim(client, transit);
   };
 
-  await Promise.all(Array.from({ length: noOfClaims }).map(resolveClaim));
+  for (let i = 0; i < noOfClaims; i++) {
+    await resolveClaim();
+  }
 }
 
 export async function aClientWithClaims(

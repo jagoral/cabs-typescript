@@ -76,7 +76,7 @@ describe('Claim automatic resolving', () => {
     expect(claim2.getCompletionMode()).toEqual(CompletionMode.MANUAL);
   });
 
-  it('should low cost transits by refunded if client is vip', async () => {
+  it('should low cost transits be refunded if client is vip', async () => {
     //given
     lowCostThresholdIs(40);
     //and
@@ -264,12 +264,14 @@ describe('Claim automatic resolving', () => {
   }
 
   async function lowCostThresholdIs(price: number): Promise<void> {
-    appPropertiesMock.getAutomaticRefundForVipThreshold.mockReturnValue(price);
+    appPropertiesMock.getAutomaticRefundForVipThreshold.mockImplementation(
+      () => price,
+    );
   }
 
   async function noOfTransitsForAutomaticRefundIs(no: number): Promise<void> {
-    appPropertiesMock.getNoOfTransitsForClaimAutomaticRefund.mockReturnValue(
-      no,
+    appPropertiesMock.getNoOfTransitsForClaimAutomaticRefund.mockImplementation(
+      () => no,
     );
   }
 
