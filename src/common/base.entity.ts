@@ -7,4 +7,8 @@ export class BaseEntity {
   public getId(): string {
     return this.id;
   }
+
+  protected setId(id: string): void {
+    this.id = id;
+  }
 }

@@ -49,6 +49,7 @@ import { AwardsAccountController } from './controllers/awards-account.controller
 import { ClaimController } from './controllers/claim.controller';
 import { ContractController } from './controllers/contract.controller';
 import { DriverReportController } from './controllers/driver-report.controller';
+import { ClaimResolverRepository } from './repository/claim-resolver.repository';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { DriverReportController } from './controllers/driver-report.controller';
       CarTypeActiveCounterRepository,
       InvoiceRepository,
       ClaimRepository,
+      ClaimResolverRepository,
       ClientRepository,
       DriverSessionRepository,
       DriverFeeRepository,

@@ -77,7 +77,10 @@ interface TransitConstructor {
   distance: Distance;
 }
 
-type TransitTestConstructor = { status: Status } & TransitConstructor;
+type TransitTestConstructor = {
+  status: Status;
+  id?: string;
+} & TransitConstructor;
 
 function isTransitTestConstructor(
   input: TransitConstructor | TransitTestConstructor,
@@ -196,6 +199,7 @@ export class Transit extends BaseEntity {
     this.pickupAddressChangeCounter = 0;
     if (isTransitTestConstructor(input)) {
       this.status = input.status;
+      input.id && this.setId(input.id);
     } else {
       this.status = Status.DRAFT;
     }
