@@ -54,7 +54,7 @@ export class AwardedMiles extends BaseEntity {
   }
 
   public getExpirationDate() {
-    return this.expirationDate;
+    return this.expirationDate ? +this.expirationDate : this.expirationDate;
   }
 
   public setExpirationDate(expirationDate: number) {

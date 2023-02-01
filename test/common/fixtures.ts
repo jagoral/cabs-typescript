@@ -28,15 +28,19 @@ import { TransitOverrides, CompletedTransitOverrides } from './fixtures.types';
 
 export async function aClient(clientType = ClientType.NORMAL): Promise<Client> {
   const clientRepository = await getTestService(ClientRepository);
-  const awardService = await getTestService(AwardsService);
   const client = new Client();
   client.setType(clientType);
   client.setName('Jan');
   client.setLastName('Kowalski');
   client.setDefaultPaymentType(PaymentType.PRE_PAID);
   const entity = await clientRepository.save(client);
-  await awardService.registerToProgram(entity.getId());
   return entity;
+}
+
+export async function activeAwardsAccount(client: Client): Promise<void> {
+  const awardService = await getTestService(AwardsService);
+  await awardService.registerToProgram(client.getId());
+  await awardService.activateAccount(client.getId());
 }
 
 export async function createClaim(
@@ -87,6 +91,8 @@ export async function aClientWithClaims(
   noOfClaims: number,
 ): Promise<Client> {
   const client = await aClient(clientType);
+  const awardService = await getTestService(AwardsService);
+  await awardService.registerToProgram(client.getId());
   await clientHasDoneClaims(client, noOfClaims);
   return client;
 }

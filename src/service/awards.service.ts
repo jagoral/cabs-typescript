@@ -12,9 +12,9 @@ import { AppProperties } from '../config/app-properties.config';
 import { AwardsAccountRepository } from '../repository/awards-account.repository';
 import { AwardedMilesRepository } from '../repository/awarded-miles.repository';
 import { AwardsAccount } from '../entity/awards-account.entity';
-import dayjs from 'dayjs';
+import * as dayjs from 'dayjs';
 import { Client, Type } from '../entity/client.entity';
-import orderBy from 'lodash.orderby';
+import { orderBy } from 'lodash';
 
 export interface IAwardsService {
   findBy: (clientId: string) => Promise<AwardsAccountDto>;
@@ -147,7 +147,9 @@ export class AwardsService implements IAwardsService {
   }
 
   public async removeMiles(clientId: string, miles: number) {
-    const client = await this.clientRepository.findOne(clientId);
+    const client = await this.clientRepository.findOne(clientId, {
+      relations: ['claims'],
+    });
     if (!client) {
       throw new NotFoundException(
         `Client with id ${clientId} doest not exists`,
@@ -171,7 +173,11 @@ export class AwardsService implements IAwardsService {
         // TODO: verify below sorter
         if (client.getClaims().length >= 3) {
           // milesList.sort(Comparator.comparing(AwardedMiles::getExpirationDate, Comparators.nullsHigh()).reversed().thenComparing(Comparators.nullsHigh()));
-          milesList = orderBy(milesList, [(item) => item.getExpirationDate()]);
+          milesList = orderBy(
+            milesList,
+            [(item) => item.getExpirationDate() || Infinity],
+            ['desc'],
+          );
         } else if (client.getType() === Type.VIP) {
           // milesList.sort(Comparator.comparing(AwardedMiles::isSpecial).thenComparing(AwardedMiles::getExpirationDate, Comparators.nullsLow()));
           milesList = orderBy(milesList, [
@@ -201,7 +207,7 @@ export class AwardsService implements IAwardsService {
           if (
             iter.getSpecial() ||
             (iter.getExpirationDate() &&
-              dayjs(iter.getExpirationDate()).isAfter(dayjs()))
+              dayjs(iter.getExpirationDate()).isAfter(Date.now()))
           ) {
             if (iter.getMiles() <= miles) {
               miles -= iter.getMiles();
@@ -238,7 +244,7 @@ export class AwardsService implements IAwardsService {
         (t) =>
           (t.getExpirationDate() != null &&
             t.getExpirationDate() &&
-            dayjs(t.getExpirationDate()).isAfter(dayjs())) ||
+            dayjs(t.getExpirationDate()).isAfter(Date.now())) ||
           t.getSpecial(),
       )
       .map((t) => t.getMiles())
@@ -299,7 +305,7 @@ export class AwardsService implements IAwardsService {
   }
 
   private isSunday() {
-    return dayjs().get('day') === 0;
+    return dayjs(Date.now()).get('day') === 0;
   }
 
   private async getAccountForClient(clientId: string | Client) {
