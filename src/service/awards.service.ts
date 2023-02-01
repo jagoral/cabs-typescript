@@ -30,7 +30,7 @@ export interface IAwardsService {
     transitId: string,
   ) => Promise<AwardedMiles | null>;
 
-  registerSpecialMiles: (
+  registerNonExpiringMiles: (
     clientId: string,
     miles: number,
   ) => Promise<AwardedMiles>;
@@ -131,7 +131,7 @@ export class AwardsService implements IAwardsService {
     }
   }
 
-  public async registerSpecialMiles(clientId: string, miles: number) {
+  public async registerNonExpiringMiles(clientId: string, miles: number) {
     const account = await this.getAccountForClient(clientId);
 
     const _miles = new AwardedMiles();
@@ -181,19 +181,19 @@ export class AwardsService implements IAwardsService {
         } else if (client.getType() === Type.VIP) {
           // milesList.sort(Comparator.comparing(AwardedMiles::isSpecial).thenComparing(AwardedMiles::getExpirationDate, Comparators.nullsLow()));
           milesList = orderBy(milesList, [
-            (item) => item.getSpecial(),
+            (item) => item.cantExpire(),
             (item) => item.getExpirationDate(),
           ]);
         } else if (transitsCounter >= 15 && this.isSunday()) {
           // milesList.sort(Comparator.comparing(AwardedMiles::isSpecial).thenComparing(AwardedMiles::getExpirationDate, Comparators.nullsLow()));
           milesList = orderBy(milesList, [
-            (item) => item.getSpecial(),
+            (item) => item.cantExpire(),
             (item) => item.getExpirationDate(),
           ]);
         } else if (transitsCounter >= 15) {
           // milesList.sort(Comparator.comparing(AwardedMiles::isSpecial).thenComparing(AwardedMiles::getDate));
           milesList = orderBy(milesList, [
-            (item) => item.getSpecial(),
+            (item) => item.cantExpire(),
             (item) => item.getDate(),
           ]);
         } else {
@@ -205,7 +205,7 @@ export class AwardsService implements IAwardsService {
             break;
           }
           if (
-            iter.getSpecial() ||
+            iter.cantExpire() ||
             (iter.getExpirationDate() &&
               dayjs(iter.getExpirationDate()).isAfter(Date.now()))
           ) {
@@ -245,7 +245,7 @@ export class AwardsService implements IAwardsService {
           (t.getExpirationDate() != null &&
             t.getExpirationDate() &&
             dayjs(t.getExpirationDate()).isAfter(Date.now())) ||
-          t.getSpecial(),
+          t.cantExpire(),
       )
       .map((t) => t.getMiles())
       .reduce((prev, curr) => prev + curr, 0);
@@ -273,7 +273,7 @@ export class AwardsService implements IAwardsService {
 
       for (const iter of milesList) {
         if (
-          iter.getSpecial() ||
+          iter.cantExpire() ||
           dayjs(iter.getExpirationDate()).isAfter(dayjs())
         ) {
           if (iter.getMiles() <= miles) {
@@ -284,7 +284,7 @@ export class AwardsService implements IAwardsService {
             const _miles = new AwardedMiles();
 
             _miles.setClient(accountTo.getClient());
-            _miles.setSpecial(iter.getSpecial() ?? false);
+            _miles.setSpecial(iter.cantExpire() ?? false);
             _miles.setExpirationDate(iter.getExpirationDate() || Date.now());
             _miles.setMiles(miles);
 

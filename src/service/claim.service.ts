@@ -110,7 +110,7 @@ export class ClaimService {
       );
 
       if (claim.getOwner().getType() === Type.VIP) {
-        await this.awardsService.registerSpecialMiles(
+        await this.awardsService.registerNonExpiringMiles(
           claim.getOwner().getId(),
           10,
         );

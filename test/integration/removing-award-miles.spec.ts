@@ -22,7 +22,7 @@ describe('Removing Award Miles', () => {
     console.log = jest.fn();
   });
 
-  it('should by default remove oldest first even when they are special', async () => {
+  it('should by default remove oldest first even when they are not expiring', async () => {
     //given
     const client = await clientWithAnActiveMilesProgram();
     //and
@@ -32,7 +32,7 @@ describe('Removing Award Miles', () => {
       getGrantedMilesThatWillExpireInDaysFn(client, transit);
     const middle = await grantedMilesThatWillExpireInDays(10, 365, YESTERDAY);
     const youngest = await grantedMilesThatWillExpireInDays(10, 365, TODAY);
-    const oldestSpecialMiles = await grantedSpecialMiles(
+    const oldestNonExpiringMiles = await grantedNonExpiringMiles(
       5,
       DAY_BEFORE_YESTERDAY,
       client,
@@ -43,7 +43,7 @@ describe('Removing Award Miles', () => {
 
     //then
     const expectMilesReducedTo = await getExpectMilesReducedToChecker(client);
-    expectMilesReducedTo(oldestSpecialMiles, 0);
+    expectMilesReducedTo(oldestNonExpiringMiles, 0);
     expectMilesReducedTo(middle, 0);
     expectMilesReducedTo(youngest, 9);
   });
@@ -76,7 +76,7 @@ describe('Removing Award Miles', () => {
     expectMilesReducedTo(youngest, 10);
   });
 
-  it('should remove special miles last when many transits', async () => {
+  it('should remove non expiring miles last when many transits', async () => {
     //given
     const client = await clientWithAnActiveMilesProgram();
     //and
@@ -87,7 +87,7 @@ describe('Removing Award Miles', () => {
     const grantedMilesThatWillExpireInDays =
       getGrantedMilesThatWillExpireInDaysFn(client, transit);
     const regularMiles = await grantedMilesThatWillExpireInDays(10, 365, TODAY);
-    const oldestSpecialMiles = await grantedSpecialMiles(
+    const oldestNonExpiringMiles = await grantedNonExpiringMiles(
       5,
       DAY_BEFORE_YESTERDAY,
       client,
@@ -99,7 +99,7 @@ describe('Removing Award Miles', () => {
     //then
     const expectMilesReducedTo = await getExpectMilesReducedToChecker(client);
     expectMilesReducedTo(regularMiles, 0);
-    expectMilesReducedTo(oldestSpecialMiles, 2);
+    expectMilesReducedTo(oldestNonExpiringMiles, 2);
   });
 
   it('should remove soon to expire miles first when client is vip', async () => {
@@ -121,7 +121,7 @@ describe('Removing Award Miles', () => {
       DAY_BEFORE_YESTERDAY,
     );
     const firstToExpire = await grantedMilesThatWillExpireInDays(15, 30, TODAY);
-    const specialMiles = await grantedSpecialMiles(
+    const nonExpiringMiles = await grantedNonExpiringMiles(
       1,
       DAY_BEFORE_YESTERDAY,
       client,
@@ -132,7 +132,7 @@ describe('Removing Award Miles', () => {
 
     //then
     const expectMilesReducedTo = await getExpectMilesReducedToChecker(client);
-    expectMilesReducedTo(specialMiles, 1);
+    expectMilesReducedTo(nonExpiringMiles, 1);
     expectMilesReducedTo(firstToExpire, 0);
     expectMilesReducedTo(secondToExpire, 4);
     expectMilesReducedTo(thirdToExpire, 5);
@@ -159,7 +159,11 @@ describe('Removing Award Miles', () => {
       DAY_BEFORE_YESTERDAY,
     );
     const firstToExpire = await grantedMilesThatWillExpireInDays(15, 10, TODAY);
-    const specialMiles = await grantedSpecialMiles(100, YESTERDAY, client);
+    const nonExpiringMiles = await grantedNonExpiringMiles(
+      100,
+      YESTERDAY,
+      client,
+    );
 
     //when
     itIsSunday();
@@ -167,7 +171,7 @@ describe('Removing Award Miles', () => {
 
     //then
     const expectMilesReducedTo = await getExpectMilesReducedToChecker(client);
-    expectMilesReducedTo(specialMiles, 100);
+    expectMilesReducedTo(nonExpiringMiles, 100);
     expectMilesReducedTo(firstToExpire, 0);
     expectMilesReducedTo(secondToExpire, 4);
     expectMilesReducedTo(thirdToExpire, 5);
@@ -198,14 +202,18 @@ describe('Removing Award Miles', () => {
       10,
       YESTERDAY,
     );
-    const specialMiles = await grantedSpecialMiles(10, YESTERDAY, client);
+    const nonExpiringMiles = await grantedNonExpiringMiles(
+      10,
+      YESTERDAY,
+      client,
+    );
 
     //when
     await awardsService.removeMiles(client.getId(), 21);
 
     //then
     const expectMilesReducedTo = await getExpectMilesReducedToChecker(client);
-    expectMilesReducedTo(specialMiles, 0);
+    expectMilesReducedTo(nonExpiringMiles, 0);
     expectMilesReducedTo(thirdToExpire, 0);
     expectMilesReducedTo(secondToExpire, 3);
     expectMilesReducedTo(firstToExpire, 5);
@@ -235,14 +243,14 @@ describe('Removing Award Miles', () => {
     };
   }
 
-  async function grantedSpecialMiles(
+  async function grantedNonExpiringMiles(
     miles: number,
     when: Date | dayjs.Dayjs,
     client: Client,
   ): Promise<AwardedMiles> {
     Date.now = jest.fn(() => when.valueOf());
     await defaultMilesBonusIs(miles);
-    return awardsService.registerSpecialMiles(client.getId(), miles);
+    return awardsService.registerNonExpiringMiles(client.getId(), miles);
   }
 
   async function getExpectMilesReducedToChecker(client: Client) {

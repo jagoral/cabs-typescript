@@ -14,7 +14,7 @@ describe('Claim automatic resolving', () => {
   let claimService: ClaimService;
   let testingModule: TestingModule;
   const awardsServiceMock = {
-    registerSpecialMiles: jest.fn(),
+    registerNonExpiringMiles: jest.fn(),
   };
   const clientNotificationsServiceMock = {
     notifyClientAboutRefund: jest.fn(),
@@ -99,7 +99,7 @@ describe('Claim automatic resolving', () => {
     expect(
       clientNotificationsServiceMock.notifyClientAboutRefund,
     ).toBeCalledWith(claim.getClaimNo(), client.getId());
-    expect(awardsServiceMock.registerSpecialMiles).toBeCalledWith(
+    expect(awardsServiceMock.registerNonExpiringMiles).toBeCalledWith(
       claim.getOwner().getId(),
       10,
     );
@@ -127,7 +127,7 @@ describe('Claim automatic resolving', () => {
     expect(
       driverNotificationsServiceMock.askDriverForDetailsAboutClaim,
     ).toBeCalledWith(claim.getClaimNo(), driver.getId());
-    expect(awardsServiceMock.registerSpecialMiles).not.toBeCalled();
+    expect(awardsServiceMock.registerNonExpiringMiles).not.toBeCalled();
   });
 
   it('should first three claims be refunded', async () => {
@@ -173,7 +173,7 @@ describe('Claim automatic resolving', () => {
     expect(
       clientNotificationsServiceMock.notifyClientAboutRefund,
     ).toBeCalledWith(claim3.getClaimNo(), client.getId());
-    expect(awardsServiceMock.registerSpecialMiles).not.toBeCalled();
+    expect(awardsServiceMock.registerNonExpiringMiles).not.toBeCalled();
   });
 
   it('should low cost transits be refunded when many transits', async () => {
@@ -199,7 +199,7 @@ describe('Claim automatic resolving', () => {
     expect(
       clientNotificationsServiceMock.notifyClientAboutRefund,
     ).toBeCalledWith(claim.getClaimNo(), client.getId());
-    expect(awardsServiceMock.registerSpecialMiles).not.toBeCalled();
+    expect(awardsServiceMock.registerNonExpiringMiles).not.toBeCalled();
   });
 
   it('should high cost transits are escalated even with many transits', async () => {
@@ -227,7 +227,7 @@ describe('Claim automatic resolving', () => {
       claim.getClaimNo(),
       client.getId(),
     );
-    expect(awardsServiceMock.registerSpecialMiles).not.toBeCalled();
+    expect(awardsServiceMock.registerNonExpiringMiles).not.toBeCalled();
   });
 
   it('should high cost transits be escalated when few transits', async () => {
@@ -257,7 +257,7 @@ describe('Claim automatic resolving', () => {
     expect(
       driverNotificationsServiceMock.askDriverForDetailsAboutClaim,
     ).toBeCalledWith(claim.getClaimNo(), driver.getId());
-    expect(awardsServiceMock.registerSpecialMiles).not.toBeCalled();
+    expect(awardsServiceMock.registerNonExpiringMiles).not.toBeCalled();
   });
 
   async function aTransit(client: Client, driver: Driver, price: number) {
