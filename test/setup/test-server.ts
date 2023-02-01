@@ -22,7 +22,7 @@ export async function getTestApp(): Promise<INestApplication> {
   return createTestApp();
 }
 
-export const getTestService = async <T>(repository: Type<T>) => {
+export const getTestService = async <T>(service: Type<T>) => {
   const app = await getTestApp();
-  return app.get<T>(repository);
+  return app.get<T>(service);
 };

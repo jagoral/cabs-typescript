@@ -31,6 +31,7 @@ describe('Transit Life Cycle', () => {
       .mockImplementation((address) =>
         address.getCountry() === 'Polska' ? [1, 1] : [1000, 1000],
       );
+    console.log = jest.fn();
   });
 
   it('should create transit', async () => {

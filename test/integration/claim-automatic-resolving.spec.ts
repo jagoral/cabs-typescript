@@ -46,6 +46,7 @@ describe('Claim automatic resolving', () => {
   });
 
   beforeEach(() => {
+    console.log = jest.fn();
     jest.resetAllMocks();
   });
 
